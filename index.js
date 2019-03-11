@@ -22,23 +22,26 @@ app.get('/chatstyle.css', function(req, res){
 });
 
 io.on('connection', function(socket){
+	let color = getRandomColor();
 	socket.emit('new user check');
 	
 	socket.on('new user', function(){
+		socket.color = color;
 		let nickname = usernickname.choose();
 		socket.username = nickname;
-		allUsers.push({nickname: nickname});
+		allUsers.push({nickname: nickname, color: color});
 		socket.emit('username notify', socket.username);
 		socket.emit('chat history', chatHistory);
 		socket.emit('user connected', nickname);
 		socket.broadcast.emit('user connected', nickname);
-		socket.emit('new cookie user', nickname);
+		socket.emit('new cookie user', nickname, color);
 		io.emit('user list', allUsers);
 	});
 	
 	socket.on('new cookie', function(nickname){
 		socket.username = nickname;
-		allUsers.push({nickname: nickname})
+		socket.color = color;
+		allUsers.push({nickname: nickname, color: color})
 		socket.emit('username notify', socket.username);
 		socket.emit('chat history', chatHistory);
 		socket.emit('user connected', nickname);
@@ -64,18 +67,66 @@ io.on('connection', function(socket){
 		let currMin = (currTime.getMinutes()<10 ? '0' : '') + currTime.getMinutes();
 		timestamp = currHour + ':' + currMin;
 		
-		if(chatHistory.length === 200){
-			chatHistory.shift();
-			fullHistory = true;
+		if(msg.startsWith("/nickcolor ")){
+			let test = msg.slice(11);
+			if (isNaN(test)){
+				socket.emit('error color');
+			} else {
+				socket.color = test;
+			}
+			for(let i = 0; i < allUsers.length; i++){
+				if (allUsers[i].nickname === socket.name){
+					allUsers[i].color = socket.color;
+				}
+			}
+			io.emit('user list', allUsers);
+			socket.emit('color change', socket.color);
+		} else if (msg.startsWith("/nick ")){
+			let oldName = socket.name;
+			let nameTaken = false;
+			socket.name = msg.slice(6);
+			for (let i = 0; i < allUsers.length; i++){
+				if (allUsers[i].nickname === socket.name){
+					nameTaken = true;
+				}
+			}
+			
+			if (nameTaken){
+				socket.emit('name taken', socket.name);
+				socket.name = oldName;
+			} else {
+				for (let i = 0; i < allUsers.length; i++){
+					if (allUsers[i].nickname === oldName){
+						allUsers[i].nickname = socket.name;
+					}
+				}
+				io.emit('user list', allUsers);
+				socket.broadcast.emit('other user change', oldName, socket.name);
+				socket.emit('changed cookie name', socket.name);
+				socket.emit('nickname confirm', socket.name);
+			}
+		} else {
+			if(chatHistory.length === 200){
+				chatHistory.shift();
+				fullHistory = true;
+			}
+			
+			chatHistory.push({user: socket.username, color: socket.color, msg: msg});
+			socket.broadcast.emit('chat message', timestamp, socket.color, socket.username, msg, fullHistory);
+			socket.emit('bold chat message', timestamp, socket.color, socket.username, msg, fullHistory);
 		}
-		
-		chatHistory.push({user: socket.username, msg: msg});
-		socket.broadcast.emit('chat message', timestamp, socket.username, msg, fullHistory);
-		socket.emit('bold chat message', timestamp, socket.username, msg, fullHistory);
 	});
 });
 
-
+/* taken from: https://stackoverflow.com/questions/1484506/random-color-generator*/
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
 
 http.listen(port, function(){
 	console.log('listening on *:' + port);

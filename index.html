@@ -10,7 +10,7 @@
 
 
 
-<div class="header">
+<div class="container" id="title">
 	<h1> Chattenger - a Socket.io chat application!</h1>
 	<p id="p1">henlo~~!!</p>
 </div>
@@ -52,6 +52,24 @@
 		}
 	});
 	
+	socket.on('nickname confirm', function(newName){
+        $('#messages').append($('<li>').html('<i>' + "You are now: " + newName + '</i>'));
+    });
+	
+	socket.on('changed cookie name', function(newName){
+		if(document.cookie){
+			document.cookie = newName;
+		}
+	});
+	
+	socket.on('name taken', function(takenName){
+		$('#messages').append($('<li>').html('<i>' + "Name:" + newName + " is unavailable.  Please choose another!" + '</i>'));
+	});
+	
+	socket.on('other user change', function(oldName, newName){
+		$('#messages').append($('<li>').html('<i>' + oldName + " changed their name to: " + newName + '</i>'));
+	});
+	
 	socket.on('new cookie user', function(username){
 		document.cookie = username;
 		document.getElementById("p1").innerHTML = `You are: ${document.cookie}`;
@@ -61,13 +79,13 @@
 	socket.on('user list', function(allUsers){
 		$('#userlist').text('');
 		for (let i = 0; i < allUsers.length; i++){
-			$('#userlist').append($('<li>').html(allUsers[i].nickname));
+			$('#userlist').append($('<li>').html('<span style="color:' + allUsers[i].color + '">' + allUsers[i].nickname + '</span>'));
 		}
 	});
 	
 	socket.on('chat history', function(chatHistory){
 		for (let i = 0; i < chatHistory.length; i++){
-			$('#messages').append($('<li>').html(chatHistory[i].user + ':' + chatHistory[i].msg));
+			$('#messages').append($('<li>').html('<span style="color:' + chatHistory[i].color + '">' + chatHistory[i].user + ': </span>' + chatHistory[i].msg));
 		}
 	});
 	
@@ -79,7 +97,7 @@
 		$('#messages').append($('<li>').text(deletedUser + ' has disconnected'));
 	});
 	
-	socket.on('chat message', function(timestamp, username, msg, fullHistory){
+	socket.on('chat message', function(timestamp, color, username, msg, fullHistory){
 		if(fullHistory){
 			var temp = document.querySelectorAll('#messages li')
 			for (var i = 0; li = temp[i]; i--){
@@ -87,10 +105,10 @@
 			}
 		}
 
-		$('#messages').append($('<li>').html(timestamp + '-' + username + ':' + msg));
+		$('#messages').append($('<li>').html(timestamp + '-' + '<span style="color:' + color + '">' + username + ': </span>' + msg));
 	});
 	
-	socket.on('bold chat message', function(timestamp, username, msg, fullHistory){
+	socket.on('bold chat message', function(timestamp, color, username, msg, fullHistory){
 		if(fullHistory){
 			var temp = document.querySelectorAll('#messages li')
 			for (var i = 0; li = temp[i]; i--){
@@ -98,7 +116,15 @@
 			}
 		}
 		
-		$('#messages').append($('<li>').html(timestamp + '-' + username + ':' + '<b>' + msg + '</b>'));
+		$('#messages').append($('<li>').html(timestamp + '-' + '<span style="color:' + color + '">' +  username + ': </span>' + '<b>' + msg + '</b>'));
+	});
+	
+	socket.on('error color', function(){
+		$('#messages').append($('<li>').text('Invaid color!  You get a random color instead'));
+	});
+	
+	socket.on('color change', function(color){
+		$('#messages').append($('<li>').html('<i>' + "Nickname color has been set to: " + color + '</i>'));
 	});
 </script>
 </body>
