@@ -8,8 +8,6 @@
 
 <body>
 
-
-
 <div class="container" id="title">
 	<h1> Chattenger - a Socket.io chat application!</h1>
 	<p id="p1">henlo~~!!</p>
@@ -27,6 +25,7 @@
 	
 <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<!-- for some reason, a separate js file for everything client side wouldn't work, so everthing is shoved into the script tag.  sorry! -->
 <script>
 	var socket = io();
 	var username;

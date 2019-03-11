@@ -17,14 +17,17 @@ app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
 
+/*allowing the css file to import*/
 app.get('/chatstyle.css', function(req, res){
 	res.sendFile(__dirname + '/chatstyle.css');
 });
 
 io.on('connection', function(socket){
+	/*start off with random color*/
 	let color = getRandomColor();
 	socket.emit('new user check');
 	
+	/*when a new user initially connects*/
 	socket.on('new user', function(){
 		socket.color = color;
 		let nickname = usernickname.choose();
@@ -38,6 +41,7 @@ io.on('connection', function(socket){
 		io.emit('user list', allUsers);
 	});
 	
+	/*when a new cookie is created*/
 	socket.on('new cookie', function(nickname){
 		socket.username = nickname;
 		socket.color = color;
@@ -49,6 +53,7 @@ io.on('connection', function(socket){
 		io.emit('user list', allUsers);
 	});
 	
+	/*when a user leaves*/
 	socket.on('disconnect', function(){
 		let deletedUser = socket.username;
 		socket.broadcast.emit('delete user', deletedUser);
@@ -61,12 +66,14 @@ io.on('connection', function(socket){
 		io.emit('user list', allUsers);
 	});
 	
+	/*when a user sends a message*/
 	socket.on('chat message', function(msg){
 		currTime = new Date();
 		let currHour = currTime.getHours();
 		let currMin = (currTime.getMinutes()<10 ? '0' : '') + currTime.getMinutes();
 		timestamp = currHour + ':' + currMin;
 		
+		/*if user changes color*/
 		if(msg.startsWith("/nickcolor ")){
 			let test = msg.slice(11);
 			if (isNaN(test)){
@@ -81,6 +88,7 @@ io.on('connection', function(socket){
 			}
 			io.emit('user list', allUsers);
 			socket.emit('color change', socket.color);
+		/*if user changes nickname*/
 		} else if (msg.startsWith("/nick ")){
 			let oldName = socket.name;
 			let nameTaken = false;
@@ -105,6 +113,7 @@ io.on('connection', function(socket){
 				socket.emit('changed cookie name', socket.name);
 				socket.emit('nickname confirm', socket.name);
 			}
+		/*otherwise normal message*/
 		} else {
 			if(chatHistory.length === 200){
 				chatHistory.shift();
@@ -113,6 +122,7 @@ io.on('connection', function(socket){
 			
 			chatHistory.push({user: socket.username, color: socket.color, msg: msg});
 			socket.broadcast.emit('chat message', timestamp, socket.color, socket.username, msg, fullHistory);
+			/*bold message for user only*/
 			socket.emit('bold chat message', timestamp, socket.color, socket.username, msg, fullHistory);
 		}
 	});
