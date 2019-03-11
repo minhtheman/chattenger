@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chattenger!</title>
+    <link href="chatstyle.css" rel="stylesheet">
+	<meta name="viewport" content="width=device-width. initial-scale=1.0">
+</head>
+
+<body>
+
+
+
+<div class="header">
+	<h1> Chattenger - a Socket.io chat application!</h1>
+	<p id="p1">henlo~~!!</p>
+</div>
+
+<ul id="messages"></ul>
+<div id="user_lists">
+	<h1 style="text-decoration: underline overline;"> Current Users </h1>
+	<ul style="list-style: none;" id="userlist"></ul>
+</div>
+
+<form action="">
+    <input id="m" autocomplete="off" /><button>Send</button>
+</form>
+	
+<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+	var socket = io();
+	var username;
+	var chatHistory = $('#messages');
+
+	$('form').submit(function(e){
+		e.preventDefault(); // prevents page reloading
+		socket.emit('chat message', $('#m').val());
+		$('#messages').stop(true,true).animate({
+			scrollTop: $('#messages')[0].scrollHeight}, 'slow');
+		$('#m').val('');
+		return false;
+	});
+	
+	
+	socket.on('new user check', function(username){
+		if(document.cookie){
+			socket.emit('new cookie', document.cookie);
+			document.getElementById("p1").innerHTML = `You are: ${document.cookie}`;
+			$('#userlist').append($('<li>').text(document.cookie));
+		} else {
+			socket.emit('new user');
+		}
+	});
+	
+	socket.on('new cookie user', function(username){
+		document.cookie = username;
+		document.getElementById("p1").innerHTML = `You are: ${document.cookie}`;
+		$('#userlist').append($('<li>').text(username));
+	});
+	
+	socket.on('user list', function(allUsers){
+		$('#userlist').text('');
+		for (let i = 0; i < allUsers.length; i++){
+			$('#userlist').append($('<li>').html(allUsers[i].nickname));
+		}
+	});
+	
+	socket.on('chat history', function(chatHistory){
+		for (let i = 0; i < chatHistory.length; i++){
+			$('#messages').append($('<li>').html(chatHistory[i].user + ':' + chatHistory[i].msg));
+		}
+	});
+	
+	socket.on('user connected', function(username){
+		$('#messages').append($('<li>').text('Hello there! ' + username + ' has connected'));
+	});
+		
+	socket.on('delete user', function(deletedUser){
+		$('#messages').append($('<li>').text(deletedUser + ' has disconnected'));
+	});
+	
+	socket.on('chat message', function(timestamp, username, msg, fullHistory){
+		if(fullHistory){
+			var temp = document.querySelectorAll('#messages li')
+			for (var i = 0; li = temp[i]; i--){
+				li.parentNode.removeChild(li);
+			}
+		}
+
+		$('#messages').append($('<li>').html(timestamp + '-' + username + ':' + msg));
+	});
+	
+	socket.on('bold chat message', function(timestamp, username, msg, fullHistory){
+		if(fullHistory){
+			var temp = document.querySelectorAll('#messages li')
+			for (var i = 0; li = temp[i]; i--){
+				li.parentNode.removeChild(li);
+			}
+		}
+		
+		$('#messages').append($('<li>').html(timestamp + '-' + username + ':' + '<b>' + msg + '</b>'));
+	});
+</script>
+</body>
+</html>
